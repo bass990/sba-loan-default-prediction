@@ -1,0 +1,51 @@
+# Secrets, never commit real credentials
+.env
+.env.*
+!.env.example
+*.key
+*-credentials.json
+service-account*.json
+*.pem
+
+# OS cruft
+.DS_Store
+__MACOSX/
+Thumbs.db
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+
+# Jupyter
+.ipynb_checkpoints/
+*-checkpoint.ipynb
+
+# Virtualenvs
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Local agent guidance
+AGENTS.md
+
+# Local-only reference material
+old_*/
+*_old*
+
+# Raw datasets (large; regenerable via download)
+data/Kaggle/
+data/*.zip
+data/*.csv
