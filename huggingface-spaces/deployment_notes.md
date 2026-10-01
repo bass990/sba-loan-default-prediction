@@ -13,6 +13,9 @@
 1. Create a new Space at https://huggingface.co/spaces (choose **Gradio** SDK).
 2. Upload the following files to the Space repository:
    - `app.py` (this directory)
+   - `score_model.py` (repo root; the Space imports it so scoring cannot drift from the API)
+   - `sample_500.csv` (this directory; the "Load 500-row sample" button)
+   - `artifacts/eval_report.json` (threshold + calibration numbers shown in the UI)
    - `requirements.txt` (this directory)
    - `artifacts/xgb_model_1.json`
    - `artifacts/xgb_model_2.json`
@@ -25,18 +28,23 @@
 
 The app provides:
 - A CSV file uploader
-- A **Score** button that runs the two-model weighted ensemble
-- A summary panel showing record count, default rate, weights, and threshold
-- A results table with columns: `index`, `label`, `probability_0`, `probability_1`
+- A threshold choice: F1-optimal 0.66 (model card) or cost-optimal 0.35 (lowest expected loss)
+- A **Score** button and a **Load 500-row sample** button
+- A summary panel: records scored, flagged share, the expected-loss comparison and a calibration warning
+- A results table with columns: `index`, `predicted_default`, `default_probability` (3 dp)
 - A **Download Results CSV** button
 
 ## Screenshots
 
-> **TODO:** Add screenshots here after deployment.  
-> 1. Screenshot of the app interface (empty state) 
-![App form, empty state](screenshot_app_form.png)
-> 2. Screenshot after a successful scoring run showing results table  
-![App results, post-scoring](screenshot_app_results.png)
+![The v2 scoring app after scoring the 500-row sample at the F1-optimal threshold: summary box with the AUCPR, flagged count, expected-loss comparison and calibration warning, then the results table](../docs/screenshots/scoring_app.png)
+
+*The v2 app as the Space serves it, captured 2026-09-30 from the Docker image at `/ui`, which runs the same `app.py`.*
+
+The two older screenshots below are from the v1 app (single threshold, four-column output), kept for the record.
+
+![v1 app form, empty state](screenshot_app_form.png)
+
+![v1 app results, post-scoring](screenshot_app_results.png)
 
 ## Scoring Output Schema
 

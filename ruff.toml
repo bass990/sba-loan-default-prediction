@@ -1,0 +1,10 @@
+# Match the NBA project's tolerant style — code is shipped, not refactor-target.
+line-length = 120
+
+[lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = [
+    "E501",  # line too long — many descriptive Field() calls
+    "E701",  # multiple statements on one line (compact dict construction)
+    "E702",
+]

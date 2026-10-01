@@ -1,262 +1,135 @@
 """
-SBA Loan Default Prediction — Gradio Scoring App
-Hugging Face Spaces deployment for Project 2 (BUAN 6341, Spring 2026)
-Author: Mamadou Bassirou Diallo  
-"""
+SBA Loan Default Prediction, Gradio scoring app (Hugging Face Space).
 
-import io
+Scoring is delegated to `score_model.py`, the same module the FastAPI service
+and the golden-prediction tests use, so the Space cannot drift from the API.
+Deploy: upload app.py, score_model.py, requirements.txt, sample_500.csv and the
+artifacts/ directory (see deployment_notes.md).
+"""
+from __future__ import annotations
+
 import json
-import pickle
+import os
+import sys
+import tempfile
 import traceback
 from pathlib import Path
-import tempfile, os
-
 
 import gradio as gr
-import numpy as np
 import pandas as pd
-import xgboost as xgb
 
-# ── Artifact paths ─────────────────────────────────────────────────────────────
-HERE          = Path(__file__).resolve().parent
-ARTIFACTS_DIR = HERE / "artifacts"
-if not ARTIFACTS_DIR.exists():
-    ARTIFACTS_DIR = HERE.parent / "artifacts"   # fallback for local dev
+HERE = Path(__file__).resolve().parent
+for candidate in (HERE, HERE.parent):           # Space root, or the repo when run locally
+    if (candidate / "score_model.py").exists():
+        sys.path.insert(0, str(candidate))
+        break
+from score_model import load_artifacts, score  # noqa: E402
 
-
-# ── Artifact loaders ───────────────────────────────────────────────────────────
-def _load_booster(path: Path) -> xgb.Booster:
-    b = xgb.Booster()
-    b.load_model(str(path))
-    return b
+SAMPLE_CSV = HERE / "sample_500.csv"
+EVAL_REPORT = next((p for p in (HERE / "artifacts" / "eval_report.json", HERE.parent / "artifacts" / "eval_report.json") if p.exists()), None)
+MODEL_CARD_URL = "https://github.com/bass990/sba-loan-default-prediction#model-card"
 
 
-def _load_pickle(path: Path):
-    with path.open("rb") as fh:
-        return pickle.load(fh)
-
-
-def _load_json(path: Path):
-    for enc in ("utf-8", "latin-1", "cp1252"):
+def _eval_numbers() -> dict:
+    """Headline + threshold findings from the evaluation script, so the UI states what the repo measured."""
+    out = {"aucpr": 0.567, "ece": 0.21, "f1_threshold": 0.66, "cost_threshold": 0.35, "loss_f1": None, "loss_cost": None}
+    if EVAL_REPORT:
         try:
-            with path.open("r", encoding=enc) as fh:
-                return json.load(fh)
-        except UnicodeDecodeError:
-            continue
-    raise ValueError(f"Cannot decode {path}")
-
-
-# ── Cleaning helpers ───────────────────────────────────────────────────────────
-def _clean_revlinecr(s: pd.Series) -> pd.Series:
-    s = s.copy().astype(str).str.strip().str.upper()
-    return s.map(lambda x: x if x in ("Y", "N") else "U")
-
-
-def _clean_lowdoc(s: pd.Series) -> pd.Series:
-    s = s.copy().astype(str).str.strip().str.upper()
-    return s.map(lambda x: x if x in ("Y", "N") else "U")
-
-
-def _clean_df(df: pd.DataFrame) -> pd.DataFrame:
-    out = df.copy()
-    out["RevLineCr"] = _clean_revlinecr(out["RevLineCr"])
-    out["LowDoc"]    = _clean_lowdoc(out["LowDoc"])
-    out["NewExist"]  = out["NewExist"].where(out["NewExist"] != 0.0, other=np.nan)
-    naics = out["NAICS"].astype(float)
-    out["NAICS"]     = naics.where(naics != 0, other=np.nan)
-    out["City"]      = out["City"].fillna("UNKNOWN")
-    out["State"]     = out["State"].fillna("UNK")
-    out["Bank"]      = out["Bank"].fillna("UNKNOWN")
-    out["BankState"] = out["BankState"].fillna("UNK")
+            r = json.loads(EVAL_REPORT.read_text(encoding="utf-8"))
+            out["aucpr"] = r["headline"]["aucpr"]
+            out["ece"] = r["calibration"]["ece"]
+            cw = r.get("cost_weighted_threshold", {})
+            out["cost_threshold"] = cw.get("best_threshold", {}).get("threshold", 0.35)
+            out["loss_cost"] = cw.get("best_threshold", {}).get("expected_loss_per_loan")
+            out["loss_f1"] = cw.get("f1_threshold", {}).get("expected_loss_per_loan")
+        except (OSError, ValueError, KeyError):
+            pass
     return out
 
 
-# ── Feature engineering ────────────────────────────────────────────────────────
-def _engineer_features(df: pd.DataFrame) -> pd.DataFrame:
-    out = df.copy()
-    out["sba_coverage_ratio"]        = np.where(out["GrAppv"] > 0, out["SBA_Appv"] / out["GrAppv"], 0.0)
-    out["disbursement_ratio"]        = np.where(out["GrAppv"] > 0, out["DisbursementGross"] / out["GrAppv"], 0.0)
-    out["balance_ratio"]             = out["BalanceGross"] / (out["DisbursementGross"] + 1.0)
-    out["is_franchise"]              = (out["FranchiseCode"] > 1).astype(int)
-    out["naics_unknown"]             = out["NAICS"].isna().astype(int)
-    out["naics_sector"]              = (out["NAICS"].fillna(0) // 10000).astype(int)
-    out["total_jobs"]                = out["CreateJob"] + out["RetainedJob"]
-    out["jobs_per_employee"]         = out["total_jobs"] / (out["NoEmp"] + 1.0)
-    out["new_business"]              = (out["NewExist"].fillna(1.0) == 2.0).astype(int)
-    out["same_state_bank"]           = (out["State"] == out["BankState"]).astype(int)
-    out["log_disbursement"]          = np.log1p(out["DisbursementGross"])
-    out["log_employees"]             = np.log1p(out["NoEmp"])
-    out["sba_to_disbursement_ratio"] = out["SBA_Appv"] / (out["DisbursementGross"] + 1.0)
-    out["rev_line_flag"]             = (out["RevLineCr"] == "Y").astype(int)
-    out["low_doc_flag"]              = (out["LowDoc"]    == "Y").astype(int)
-    return out
+EVAL = _eval_numbers()
+THRESHOLDS = {
+    f"F1-optimal, {EVAL['f1_threshold']:.2f} (model card)": EVAL["f1_threshold"],
+    f"Cost-optimal, {EVAL['cost_threshold']:.2f} (lowest expected loss per loan)": EVAL["cost_threshold"],
+}
 
 
-# ── Preprocessing ──────────────────────────────────────────────────────────────
-def _preprocess(df, metadata, label_encoders, median_fill):
-    out = df.copy()
-    drop_cols        = metadata["drop_cols"]
-    categorical_cols = metadata["categorical_cols"]
-    newexist_mode    = metadata["newexist_mode"]
-    feature_names    = metadata["feature_names"]
-
-    out = out.drop(columns=[c for c in drop_cols if c in out.columns], errors="ignore")
-    out = out.drop(columns=["MIS_Status"], errors="ignore")
-
-    out["NewExist"] = out["NewExist"].fillna(newexist_mode)
-
-    for col in categorical_cols:
-        le   = label_encoders[col]
-        vals = out[col].fillna("MISSING").astype(str)
-        vals = vals.map(lambda v, le=le: v if v in le.classes_ else "UNSEEN")
-        out[col] = le.transform(vals)
-
-    for col in feature_names:
-        if col not in out.columns:
-            out[col] = median_fill.get(col, 0.0)
-
-    out = out[feature_names]
-
-    for col in out.columns:
-        if out[col].isna().any():
-            out[col] = out[col].fillna(median_fill.get(col, 0.0))
-
-    return out
-
-
-# ── Lazy-load artifacts once ───────────────────────────────────────────────────
-_artifacts = {}
-
-def _get_artifacts():
-    if _artifacts:
-        return _artifacts
-    _artifacts["model_1"]        = _load_booster(ARTIFACTS_DIR / "xgb_model_1.json")
-    _artifacts["model_2"]        = _load_booster(ARTIFACTS_DIR / "xgb_model_2.json")
-    _artifacts["label_encoders"] = _load_pickle(ARTIFACTS_DIR / "label_encoders.pkl")
-    _artifacts["median_fill"]    = _load_pickle(ARTIFACTS_DIR / "median_fill.pkl")
-    _artifacts["metadata"]       = _load_json(ARTIFACTS_DIR / "ensemble_metadata.json")
-    return _artifacts
-
-
-# ── Main prediction function ───────────────────────────────────────────────────
-def predict_csv(file_obj):
-    if file_obj is None:
-        return None, "Please upload a CSV file."
-
-    # ── Read CSV — try multiple encodings ─────────────────────────────────────
-    input_df = None
+def _read_csv(path: str) -> pd.DataFrame:
     for enc in ("latin-1", "utf-8", "cp1252"):
         try:
-            input_df = pd.read_csv(file_obj.name, encoding=enc)
-            break
-        except Exception:
+            return pd.read_csv(path, encoding=enc)
+        except UnicodeDecodeError:
             continue
+    raise ValueError("could not decode the CSV (tried latin-1, utf-8, cp1252)")
 
-    if input_df is None:
-        try:
-            input_df = pd.read_csv(
-                io.StringIO(open(file_obj.name, "rb").read().decode("latin-1"))
-            )
-        except Exception as e:
-            return None, f"Could not read CSV: {e}"
 
-    if "index" not in input_df.columns:
-        return None, "CSV must contain an 'index' column."
-
-    # ── Score ──────────────────────────────────────────────────────────────────
+def predict_csv(file_obj, threshold_label: str):
+    if file_obj is None:
+        return "Upload a CSV or load the sample first.", None, gr.update(visible=False)
+    threshold = THRESHOLDS.get(threshold_label, EVAL["f1_threshold"])
     try:
-        arts        = _get_artifacts()
-        model_1     = arts["model_1"]
-        model_2     = arts["model_2"]
-        le          = arts["label_encoders"]
-        med         = arts["median_fill"]
-        meta        = arts["metadata"]
-
-        weight_m1   = meta["weight_model_1"]
-        weight_m2   = meta["weight_model_2"]
-        threshold   = meta["threshold_ensemble"]
-        feat_names  = meta["feature_names"]
-        best_iter_1 = meta["model_1_best_iteration"]
-        best_iter_2 = meta["model_2_best_iteration"]
-
-        record_ids = input_df["index"].reset_index(drop=True)
-
-        data = _clean_df(input_df.copy())
-        data = _engineer_features(data)
-        data = _preprocess(data, meta, le, med)
-
-        dmat_1 = xgb.DMatrix(data, feature_names=feat_names)
-        dmat_2 = xgb.DMatrix(data, feature_names=feat_names)
-
-        prob1_m1 = model_1.predict(dmat_1, iteration_range=(0, best_iter_1 + 1))
-        prob1_m2 = model_2.predict(dmat_2, iteration_range=(0, best_iter_2 + 1))
-
-        probability_1 = weight_m1 * prob1_m1 + weight_m2 * prob1_m2
-        probability_0 = 1.0 - probability_1
-        labels        = (probability_1 >= threshold).astype(int)
-
+        input_df = _read_csv(file_obj.name)
+        if "index" not in input_df.columns:
+            return "The CSV needs an 'index' column (record id).", None, gr.update(visible=False)
+        scored = score(input_df)                                  # shared module: cleaning, features, ensemble
+        prob = scored["probability_1"].astype(float)
         results = pd.DataFrame({
-            "index":         record_ids,
-            "label":         labels,
-            "probability_0": probability_0.round(6),
-            "probability_1": probability_1.round(6),
+            "index": scored["index"],
+            "predicted_default": (prob >= threshold).astype(int),
+            "default_probability": prob.round(3),
         })
-
-        n_default = int((results["label"] == 1).sum())
-        pct       = 100 * n_default / len(results)
-        summary   = (
-            f"Scored {len(results):,} records successfully.\n"
-            f"Predicted defaults (label=1): {n_default:,} ({pct:.1f}%)\n"
-            f"Ensemble weights: w1={weight_m1:.2f}, w2={weight_m2:.2f}\n"
-            f"Decision threshold: {threshold:.4f}"
+        n = len(results)
+        n_default = int(results["predicted_default"].sum())
+        loss_note = ""
+        if EVAL["loss_cost"] and EVAL["loss_f1"]:
+            loss_note = (f"On the held-out test set the cost-optimal threshold lowers expected loss per loan from "
+                         f"${EVAL['loss_f1']:,.0f} to ${EVAL['loss_cost']:,.0f} (approves fewer loans, catches more defaults).\n")
+        summary = (
+            f"Scored {n:,} records with the XGBoost model (held-out AUCPR {EVAL['aucpr']:.3f}; base rate about 18%).\n"
+            f"Threshold {threshold:.2f}: {n_default:,} flagged as likely default ({100 * n_default / n:.1f}%).\n"
+            + loss_note +
+            f"Calibration warning: the probabilities are not calibrated (ECE {EVAL['ece']:.2f}); they over-state default risk "
+            f"roughly two to three times in the mid range. Use them to rank and threshold, not as literal default chances.\n"
+            f"Model card and evaluation: {MODEL_CARD_URL}"
         )
-        return results, summary
+        tmp = os.path.join(tempfile.gettempdir(), "sba_scored.csv")
+        results.to_csv(tmp, index=False)
+        return summary, results, gr.update(value=tmp, visible=True)
+    except Exception:  # noqa: BLE001 - surface the traceback to the user of a scoring UI
+        return f"Scoring error:\n{traceback.format_exc()}", None, gr.update(visible=False)
 
-    except Exception:
-        return None, f"Scoring error:\n{traceback.format_exc()}"
+
+def load_sample():
+    return str(SAMPLE_CSV) if SAMPLE_CSV.exists() else None
 
 
-# ── Gradio interface ───────────────────────────────────────────────────────────
 with gr.Blocks(title="SBA Loan Default Prediction") as demo:
     gr.Markdown(
-        """
+        f"""
         # SBA Loan Default Prediction
 
-        Assess default risk on SBA loan portfolios instantly. Upload a CSV of loan records
-        and receive probability scores and labels for every record — powered by a tuned XGBoost ensemble.
+        Upload a CSV of SBA loan records (same columns as the SBA Project 2 dataset) and get a default flag and
+        probability for every record from a tuned XGBoost model. Held-out AUCPR **{EVAL['aucpr']:.3f}** against a
+        base rate of ~18%; the probabilities are **not calibrated** (ECE {EVAL['ece']:.2f}), so treat them as a
+        ranking score. Full model card, slices and the threshold analysis: [{MODEL_CARD_URL}]({MODEL_CARD_URL}).
 
         *Mamadou Bassirou Diallo*
         """
     )
-
     with gr.Row():
         file_input = gr.File(label="Upload CSV", file_types=[".csv"])
-
+        with gr.Column():
+            threshold_choice = gr.Radio(list(THRESHOLDS), value=list(THRESHOLDS)[0], label="Decision threshold",
+                                        info="0.66 maximises F1 (the model card number); 0.35 minimises expected dollar loss under the repo's cost model.")
+            sample_btn = gr.Button("Load 500-row sample", variant="secondary")
     score_btn = gr.Button("Score", variant="primary")
+    status_box = gr.Textbox(label="Summary", lines=7)
+    results_table = gr.Dataframe(label="Results (index | predicted_default | default_probability)", interactive=False)
+    download_btn = gr.DownloadButton(label="Download results CSV", visible=False)
 
-    with gr.Row():
-        status_box = gr.Textbox(label="Status / Summary", lines=8)
-
-    results_table = gr.Dataframe(
-        label="Scoring Results (index | label | probability_0 | probability_1)",
-        interactive=False,
-    )
-
-    download_btn = gr.DownloadButton(label="Download Results CSV")
-
-    def run_and_prepare_download(file_obj):
-        results_df, summary = predict_csv(file_obj)
-        if results_df is None:
-            return summary, None, gr.update(visible=False)
-        tmp_path = os.path.join(tempfile.gettempdir(), "scored_output.csv")
-        results_df.to_csv(tmp_path, index=False)
-        return summary, results_df, gr.update(value=tmp_path, visible=True)
-
-    score_btn.click(
-        run_and_prepare_download,
-        inputs=[file_input],
-        outputs=[status_box, results_table, download_btn],
-    )
+    sample_btn.click(load_sample, inputs=None, outputs=[file_input])
+    score_btn.click(predict_csv, inputs=[file_input, threshold_choice], outputs=[status_box, results_table, download_btn])
 
 if __name__ == "__main__":
+    load_artifacts()   # fail fast if the artifacts are missing
     demo.launch()

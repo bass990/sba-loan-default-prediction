@@ -1,0 +1,21 @@
+{
+ "index": 0,
+ "City": "GARDENA",
+ "State": "CA",
+ "Zip": 90249,
+ "Bank": "ONEUNITED BANK",
+ "BankState": "MA",
+ "NAICS": 0,
+ "NoEmp": 6,
+ "NewExist": 2.0,
+ "CreateJob": 0,
+ "RetainedJob": 0,
+ "FranchiseCode": 1,
+ "UrbanRural": 0,
+ "RevLineCr": "0",
+ "LowDoc": "Y",
+ "DisbursementGross": 50000.0,
+ "BalanceGross": 0.0,
+ "GrAppv": 50000.0,
+ "SBA_Appv": 40000.0
+}

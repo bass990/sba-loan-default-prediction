@@ -1,7 +1,7 @@
 """
 Project 2 Scoring Function
 SBA Loan Default Prediction
-Author: Mamadou Bassirou Diallo 
+Author: Mamadou Bassirou Diallo
 
 
 Entry point: score(input_df) -> pd.DataFrame
@@ -9,9 +9,10 @@ Artifact paths are resolved relative to THIS file so the grader can import
 from any working directory.
 """
 
-from pathlib import Path
 import json
 import pickle
+from functools import lru_cache
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -41,6 +42,24 @@ def _load_booster(path: Path) -> xgb.Booster:
     booster = xgb.Booster()
     booster.load_model(str(path))
     return booster
+
+
+@lru_cache(maxsize=1)
+def load_artifacts() -> dict:
+    """Load every artifact once per process.
+
+    The shipped booster is a 49 MB JSON file; reloading it on every call to
+    score() costs about a second and dominated the API's latency. Artifacts
+    are immutable for the life of a process, so a single cached load is
+    correct. Call load_artifacts.cache_clear() after re-training.
+    """
+    return {
+        "model_1": _load_booster(ARTIFACTS_DIR / "xgb_model_1.json"),
+        "model_2": _load_booster(ARTIFACTS_DIR / "xgb_model_2.json"),
+        "label_encoders": _load_pickle(ARTIFACTS_DIR / "label_encoders.pkl"),
+        "median_fill": _load_pickle(ARTIFACTS_DIR / "median_fill.pkl"),
+        "metadata": _load_json(ARTIFACTS_DIR / "ensemble_metadata.json"),
+    }
 
 
 # ── Output validation ────────────────────────────────────────────────────────
@@ -170,12 +189,13 @@ def score(input_df: pd.DataFrame) -> pd.DataFrame:
     data       = input_df.copy()
     record_ids = data["index"].reset_index(drop=True)
 
-    # Load artifacts
-    model_1       = _load_booster(ARTIFACTS_DIR / "xgb_model_1.json")
-    model_2       = _load_booster(ARTIFACTS_DIR / "xgb_model_2.json")
-    label_encoders = _load_pickle(ARTIFACTS_DIR / "label_encoders.pkl")
-    median_fill    = _load_pickle(ARTIFACTS_DIR / "median_fill.pkl")
-    metadata       = _load_json(ARTIFACTS_DIR / "ensemble_metadata.json")
+    # Load artifacts (cached after the first call)
+    art            = load_artifacts()
+    model_1        = art["model_1"]
+    model_2        = art["model_2"]
+    label_encoders = art["label_encoders"]
+    median_fill    = art["median_fill"]
+    metadata       = art["metadata"]
 
     weight_m1  = metadata["weight_model_1"]
     weight_m2  = metadata["weight_model_2"]

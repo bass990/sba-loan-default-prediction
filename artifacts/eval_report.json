@@ -1,0 +1,550 @@
+{
+ "evaluated_at": "2026-09-22T23:07:00.872742+00:00",
+ "source": "SBA_loans_project_2.csv stratified 15% test split, seed 42",
+ "headline": {
+  "n_test": 119904,
+  "default_rate": 0.1751,
+  "threshold": 0.66,
+  "aucpr": 0.5666,
+  "aucpr_model_card": 0.5665,
+  "roc_auc": 0.8377,
+  "precision": 0.5266,
+  "recall": 0.5508,
+  "f1": 0.5384,
+  "predicted_default_rate": 0.1832
+ },
+ "calibration": {
+  "brier": 0.1603,
+  "ece": 0.2061,
+  "reliability": [
+   {
+    "bin": "0.0-0.1",
+    "n": 16831,
+    "mean_predicted": 0.033,
+    "observed_default_rate": 0.0063
+   },
+   {
+    "bin": "0.1-0.2",
+    "n": 20229,
+    "mean_predicted": 0.1494,
+    "observed_default_rate": 0.0369
+   },
+   {
+    "bin": "0.2-0.3",
+    "n": 16745,
+    "mean_predicted": 0.2481,
+    "observed_default_rate": 0.0644
+   },
+   {
+    "bin": "0.3-0.4",
+    "n": 14690,
+    "mean_predicted": 0.3496,
+    "observed_default_rate": 0.1019
+   },
+   {
+    "bin": "0.4-0.5",
+    "n": 13513,
+    "mean_predicted": 0.4487,
+    "observed_default_rate": 0.1553
+   },
+   {
+    "bin": "0.5-0.6",
+    "n": 10640,
+    "mean_predicted": 0.5479,
+    "observed_default_rate": 0.2219
+   },
+   {
+    "bin": "0.6-0.7",
+    "n": 8449,
+    "mean_predicted": 0.6483,
+    "observed_default_rate": 0.3065
+   },
+   {
+    "bin": "0.7-0.8",
+    "n": 7916,
+    "mean_predicted": 0.7507,
+    "observed_default_rate": 0.4173
+   },
+   {
+    "bin": "0.8-0.9",
+    "n": 7283,
+    "mean_predicted": 0.8461,
+    "observed_default_rate": 0.589
+   },
+   {
+    "bin": "0.9-1.0",
+    "n": 3608,
+    "mean_predicted": 0.936,
+    "observed_default_rate": 0.8121
+   }
+  ],
+  "note": "scale_pos_weight=4.71 inflates predicted probabilities; ranking is good, the raw number over-states default risk (see reliability table)"
+ },
+ "slices": {
+  "state_top10": [
+   {
+    "State": "CA",
+    "n": 17372,
+    "default_rate": 0.1841,
+    "aucpr": 0.6448,
+    "recall": 0.6699,
+    "false_negative_rate": 0.3301,
+    "precision": 0.5742
+   },
+   {
+    "State": "TX",
+    "n": 9348,
+    "default_rate": 0.188,
+    "aucpr": 0.5195,
+    "recall": 0.51,
+    "false_negative_rate": 0.49,
+    "precision": 0.4907
+   },
+   {
+    "State": "NY",
+    "n": 7595,
+    "default_rate": 0.197,
+    "aucpr": 0.6037,
+    "recall": 0.5648,
+    "false_negative_rate": 0.4352,
+    "precision": 0.5431
+   },
+   {
+    "State": "FL",
+    "n": 5494,
+    "default_rate": 0.267,
+    "aucpr": 0.6954,
+    "recall": 0.7437,
+    "false_negative_rate": 0.2563,
+    "precision": 0.5721
+   },
+   {
+    "State": "PA",
+    "n": 4727,
+    "default_rate": 0.1436,
+    "aucpr": 0.3946,
+    "recall": 0.3343,
+    "false_negative_rate": 0.6657,
+    "precision": 0.4275
+   },
+   {
+    "State": "OH",
+    "n": 4342,
+    "default_rate": 0.1628,
+    "aucpr": 0.4616,
+    "recall": 0.471,
+    "false_negative_rate": 0.529,
+    "precision": 0.4506
+   },
+   {
+    "State": "IL",
+    "n": 3896,
+    "default_rate": 0.2266,
+    "aucpr": 0.6068,
+    "recall": 0.6376,
+    "false_negative_rate": 0.3624,
+    "precision": 0.5445
+   },
+   {
+    "State": "MN",
+    "n": 3303,
+    "default_rate": 0.1038,
+    "aucpr": 0.389,
+    "recall": 0.344,
+    "false_negative_rate": 0.656,
+    "precision": 0.4291
+   },
+   {
+    "State": "MA",
+    "n": 3274,
+    "default_rate": 0.1255,
+    "aucpr": 0.4252,
+    "recall": 0.3309,
+    "false_negative_rate": 0.6691,
+    "precision": 0.4626
+   },
+   {
+    "State": "NJ",
+    "n": 3179,
+    "default_rate": 0.201,
+    "aucpr": 0.6091,
+    "recall": 0.5931,
+    "false_negative_rate": 0.4069,
+    "precision": 0.5316
+   }
+  ],
+  "naics_sector": [
+   {
+    "naics_sector": "0",
+    "n": 26936,
+    "default_rate": 0.0842,
+    "aucpr": 0.4903,
+    "recall": 0.3732,
+    "false_negative_rate": 0.6268,
+    "precision": 0.6361
+   },
+   {
+    "naics_sector": "44",
+    "n": 11169,
+    "default_rate": 0.2194,
+    "aucpr": 0.5876,
+    "recall": 0.6063,
+    "false_negative_rate": 0.3937,
+    "precision": 0.5313
+   },
+   {
+    "naics_sector": "81",
+    "n": 9554,
+    "default_rate": 0.1997,
+    "aucpr": 0.5617,
+    "recall": 0.5419,
+    "false_negative_rate": 0.4581,
+    "precision": 0.5265
+   },
+   {
+    "naics_sector": "54",
+    "n": 9084,
+    "default_rate": 0.1805,
+    "aucpr": 0.5803,
+    "recall": 0.603,
+    "false_negative_rate": 0.397,
+    "precision": 0.5051
+   },
+   {
+    "naics_sector": "23",
+    "n": 9011,
+    "default_rate": 0.2332,
+    "aucpr": 0.5932,
+    "recall": 0.6316,
+    "false_negative_rate": 0.3684,
+    "precision": 0.508
+   },
+   {
+    "naics_sector": "72",
+    "n": 8895,
+    "default_rate": 0.2146,
+    "aucpr": 0.4993,
+    "recall": 0.4861,
+    "false_negative_rate": 0.5139,
+    "precision": 0.4677
+   },
+   {
+    "naics_sector": "62",
+    "n": 7315,
+    "default_rate": 0.1065,
+    "aucpr": 0.4505,
+    "recall": 0.3774,
+    "false_negative_rate": 0.6226,
+    "precision": 0.5149
+   },
+   {
+    "naics_sector": "42",
+    "n": 6594,
+    "default_rate": 0.1987,
+    "aucpr": 0.626,
+    "recall": 0.6321,
+    "false_negative_rate": 0.3679,
+    "precision": 0.564
+   },
+   {
+    "naics_sector": "45",
+    "n": 5749,
+    "default_rate": 0.2284,
+    "aucpr": 0.5471,
+    "recall": 0.5575,
+    "false_negative_rate": 0.4425,
+    "precision": 0.4822
+   },
+   {
+    "naics_sector": "33",
+    "n": 5165,
+    "default_rate": 0.1404,
+    "aucpr": 0.4782,
+    "recall": 0.4014,
+    "false_negative_rate": 0.5986,
+    "precision": 0.5096
+   },
+   {
+    "naics_sector": "56",
+    "n": 4352,
+    "default_rate": 0.2498,
+    "aucpr": 0.6028,
+    "recall": 0.6182,
+    "false_negative_rate": 0.3818,
+    "precision": 0.5595
+   },
+   {
+    "naics_sector": "48",
+    "n": 2797,
+    "default_rate": 0.2614,
+    "aucpr": 0.6371,
+    "recall": 0.6689,
+    "false_negative_rate": 0.3311,
+    "precision": 0.5362
+   },
+   {
+    "naics_sector": "32",
+    "n": 2356,
+    "default_rate": 0.1668,
+    "aucpr": 0.504,
+    "recall": 0.4402,
+    "false_negative_rate": 0.5598,
+    "precision": 0.5073
+   },
+   {
+    "naics_sector": "71",
+    "n": 1959,
+    "default_rate": 0.2078,
+    "aucpr": 0.5268,
+    "recall": 0.4889,
+    "false_negative_rate": 0.5111,
+    "precision": 0.5051
+   },
+   {
+    "naics_sector": "53",
+    "n": 1873,
+    "default_rate": 0.283,
+    "aucpr": 0.7042,
+    "recall": 0.7396,
+    "false_negative_rate": 0.2604,
+    "precision": 0.5985
+   },
+   {
+    "naics_sector": "31",
+    "n": 1533,
+    "default_rate": 0.1807,
+    "aucpr": 0.5438,
+    "recall": 0.5451,
+    "false_negative_rate": 0.4549,
+    "precision": 0.5225
+   },
+   {
+    "naics_sector": "51",
+    "n": 1487,
+    "default_rate": 0.2603,
+    "aucpr": 0.6144,
+    "recall": 0.677,
+    "false_negative_rate": 0.323,
+    "precision": 0.5068
+   },
+   {
+    "naics_sector": "52",
+    "n": 1281,
+    "default_rate": 0.2982,
+    "aucpr": 0.6872,
+    "recall": 0.7277,
+    "false_negative_rate": 0.2723,
+    "precision": 0.5804
+   },
+   {
+    "naics_sector": "11",
+    "n": 1218,
+    "default_rate": 0.0796,
+    "aucpr": 0.4743,
+    "recall": 0.3093,
+    "false_negative_rate": 0.6907,
+    "precision": 0.6
+   },
+   {
+    "naics_sector": "61",
+    "n": 897,
+    "default_rate": 0.2297,
+    "aucpr": 0.5277,
+    "recall": 0.5728,
+    "false_negative_rate": 0.4272,
+    "precision": 0.4538
+   },
+   {
+    "naics_sector": "49",
+    "n": 292,
+    "default_rate": 0.2158,
+    "aucpr": 0.6058,
+    "recall": 0.5556,
+    "false_negative_rate": 0.4444,
+    "precision": 0.5224
+   }
+  ],
+  "loan_size": [
+   {
+    "loan_size_bucket": "<=50k",
+    "n": 46650,
+    "default_rate": 0.2636,
+    "aucpr": 0.6306,
+    "recall": 0.7045,
+    "false_negative_rate": 0.2955,
+    "precision": 0.5255
+   },
+   {
+    "loan_size_bucket": "50-150k",
+    "n": 34106,
+    "default_rate": 0.1474,
+    "aucpr": 0.4908,
+    "recall": 0.3912,
+    "false_negative_rate": 0.6088,
+    "precision": 0.5322
+   },
+   {
+    "loan_size_bucket": "150-500k",
+    "n": 27604,
+    "default_rate": 0.0976,
+    "aucpr": 0.429,
+    "recall": 0.2853,
+    "false_negative_rate": 0.7147,
+    "precision": 0.5274
+   },
+   {
+    "loan_size_bucket": ">500k",
+    "n": 11544,
+    "default_rate": 0.0851,
+    "aucpr": 0.3427,
+    "recall": 0.1711,
+    "false_negative_rate": 0.8289,
+    "precision": 0.5185
+   }
+  ]
+ },
+ "worst_slice_by_fnr": {
+  "loan_size_bucket": ">500k",
+  "n": 11544,
+  "default_rate": 0.0851,
+  "aucpr": 0.3427,
+  "recall": 0.1711,
+  "false_negative_rate": 0.8289,
+  "precision": 0.5185
+ },
+ "cost_weighted_threshold": {
+  "assumptions": {
+   "lgd_share_of_sba_appv": 0.5,
+   "margin_share_of_gr_appv": 0.05
+  },
+  "best_threshold": {
+   "threshold": 0.35,
+   "expected_loss_per_loan": 4140.46,
+   "approval_rate": 0.5105,
+   "recall": 0.8769
+  },
+  "f1_threshold": {
+   "threshold": 0.65,
+   "expected_loss_per_loan": 5330.29,
+   "approval_rate": 0.8099,
+   "recall": 0.5637
+  },
+  "sweep": [
+   {
+    "threshold": 0.05,
+    "expected_loss_per_loan": 6806.92,
+    "approval_rate": 0.0883,
+    "recall": 0.9994
+   },
+   {
+    "threshold": 0.1,
+    "expected_loss_per_loan": 6243.51,
+    "approval_rate": 0.1404,
+    "recall": 0.995
+   },
+   {
+    "threshold": 0.15,
+    "expected_loss_per_loan": 5516.29,
+    "approval_rate": 0.2265,
+    "recall": 0.9815
+   },
+   {
+    "threshold": 0.2,
+    "expected_loss_per_loan": 4979.43,
+    "approval_rate": 0.3091,
+    "recall": 0.9594
+   },
+   {
+    "threshold": 0.25,
+    "expected_loss_per_loan": 4544.43,
+    "approval_rate": 0.3834,
+    "recall": 0.9352
+   },
+   {
+    "threshold": 0.3,
+    "expected_loss_per_loan": 4296.71,
+    "approval_rate": 0.4487,
+    "recall": 0.908
+   },
+   {
+    "threshold": 0.35,
+    "expected_loss_per_loan": 4140.46,
+    "approval_rate": 0.5105,
+    "recall": 0.8769
+   },
+   {
+    "threshold": 0.4,
+    "expected_loss_per_loan": 4185.48,
+    "approval_rate": 0.5712,
+    "recall": 0.8367
+   },
+   {
+    "threshold": 0.45,
+    "expected_loss_per_loan": 4273.77,
+    "approval_rate": 0.6301,
+    "recall": 0.7902
+   },
+   {
+    "threshold": 0.5,
+    "expected_loss_per_loan": 4469.26,
+    "approval_rate": 0.6839,
+    "recall": 0.7368
+   },
+   {
+    "threshold": 0.55,
+    "expected_loss_per_loan": 4690.61,
+    "approval_rate": 0.7312,
+    "recall": 0.6824
+   },
+   {
+    "threshold": 0.6,
+    "expected_loss_per_loan": 5001.5,
+    "approval_rate": 0.7727,
+    "recall": 0.6244
+   },
+   {
+    "threshold": 0.65,
+    "expected_loss_per_loan": 5330.29,
+    "approval_rate": 0.8099,
+    "recall": 0.5637
+   },
+   {
+    "threshold": 0.7,
+    "expected_loss_per_loan": 5613.75,
+    "approval_rate": 0.8431,
+    "recall": 0.5011
+   },
+   {
+    "threshold": 0.75,
+    "expected_loss_per_loan": 5910.63,
+    "approval_rate": 0.8755,
+    "recall": 0.4307
+   },
+   {
+    "threshold": 0.8,
+    "expected_loss_per_loan": 6153.14,
+    "approval_rate": 0.9092,
+    "recall": 0.3438
+   },
+   {
+    "threshold": 0.85,
+    "expected_loss_per_loan": 6444.74,
+    "approval_rate": 0.9433,
+    "recall": 0.2372
+   },
+   {
+    "threshold": 0.9,
+    "expected_loss_per_loan": 6727.95,
+    "approval_rate": 0.9699,
+    "recall": 0.1395
+   },
+   {
+    "threshold": 0.95,
+    "expected_loss_per_loan": 6969.46,
+    "approval_rate": 0.9914,
+    "recall": 0.0448
+   }
+  ],
+  "note": "illustrative loss model; the assumptions are inputs, not measured SBA economics"
+ }
+}

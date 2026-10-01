@@ -1,0 +1,13 @@
+__pycache__
+*.pyc
+.pytest_cache
+.venv
+.git
+.github
+data/
+notebooks/
+*.ipynb
+huggingface-spaces/*
+!huggingface-spaces/app.py
+!huggingface-spaces/sample_500.csv
+problem_brief.md

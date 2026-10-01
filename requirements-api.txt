@@ -1,0 +1,12 @@
+# Lean runtime for the FastAPI service. The full requirements.txt is the
+# training/notebook environment (h2o, shap, optuna, etc.) - none of which is
+# needed at inference time. gradio is here because the image also serves the
+# scoring UI (huggingface-spaces/app.py) at /ui.
+fastapi==0.115.4
+uvicorn[standard]==0.32.0
+pydantic==2.9.2
+xgboost==3.1.2
+pandas==2.3.3
+numpy==2.0.2
+scikit-learn==1.8.0
+gradio==6.13.0
